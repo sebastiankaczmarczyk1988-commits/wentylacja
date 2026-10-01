@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator Rysunku Frontu - Frezy Wentylacyjne</title>
+    <style>
+        :root {
+            --primary: #1e293b;
+            --accent: #2563eb;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 15px;
+            background: #f8fafc;
+            color: #0f172a;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            margin-top: 15px;
+            margin-bottom: 8px;
+            font-size: 1.05rem;
+            color: var(--primary);
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 6px;
+        }
+
+        h2:first-of-type {
+            margin-top: 0;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 0.9rem;
+            background-color: white;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        button {
+            width: 100%;
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        /* Widok A4 na ekranie komputera */
+        .preview-area {
+            display: flex;
+            justify-content: center;
+            background: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .page-a4 {
+            width: 210mm;
+            height: 297mm;
+            background: white;
+            padding: 15mm;
+            box-sizing: border-box;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-drawing {
+            border-bottom: 2px solid #000;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .header-meta {
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        .svg-container {
+            flex-grow: 1;
+            width: 100%;
+            height: 100%;
+            min-height: 400px;
+        }
+
+        .footer-note {
+            font-size: 9px;
+            color: #334155;
+            border-top: 1px solid #000;
+            padding-top: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+        }
+
+        .footer-left { font-weight: bold; text-transform: uppercase; }
+        .footer-center { color: #64748b; }
+        .footer-right { font-weight: bold; }
+
+        /* RESPONSYWNOŚĆ EKRANOWA (TELEFON) */
+        @media (max-width: 900px) {
+            body { padding: 10px; }
+            .container { grid-template-columns: 1fr; gap: 15px; }
+            .preview-area { padding: 10px; }
+            .page-a4 {
+                width: 100%;
+                height: auto;
+                aspect-ratio: 1 / 1.414;
+                padding: 12px;
+            }
+            .header-title { font-size: 14px; }
+            .header-meta { font-size: 9.5px; }
+            .footer-note { font-size: 8px; flex-direction: column; gap: 2px; text-align: center; }
+        }
+
+        /* REGUŁY DRUKU A4 DLA DRUKARKI / PDF */
+        @page {
+            size: A4 portrait;
+            margin: 8mm;
+        }
+
+        @media print {
+            body {
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .panel { display: none !important; }
+            .container { display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            .preview-area { display: block !important; background: none !important; padding: 0 !important; margin: 0 !important; }
+            .page-a4 {
+                box-shadow: none !important;
+                width: 210mm !important;
+                height: 275mm !important;
+                padding: 10mm !important;
+                box-sizing: border-box !important;
+                aspect-ratio: auto !important;
+                display: flex !important;
+                flex-direction: column !important;
+            }
+            .svg-container {
+                width: 100% !important;
+                height: 200mm !important;
+                flex-grow: 1 !important;
+            }
+            .footer-note {
+                padding-top: 2mm !important;
+                margin-bottom: 0 !important;
+                flex-direction: row !important;
+                justify-content: space-between !important;
+                font-size: 9px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- PANEL STEROWANIA -->
+    <div class="panel">
+        <h2>Wymiary Frontu</h2>
+        <div class="form-group">
+            <label>Wysokość frontu (mm)</label>
+            <input type="number" id="h" value="720" oninput="draw()">
+        </div>
+        <div class="form-group">
+            <label>Szerokość frontu (mm)</label>
+            <input type="number" id="w" value="596" oninput="draw()">
+        </div>
+
+        <h2>Parametry Frezowania</h2>
+        <div class="form-group">
+            <label>Średnica frezu Ø (mm)</label>
+            <input type="number" step="0.5" id="cutter_dia" value="16" oninput="draw()">
+        </div>
+        <div class="form-group">
+            <label>Ilość frezów (szt.)</label>
+            <input type="number" id="count" value="4" min="1" max="15" oninput="draw()">
+        </div>
+        <div class="form-group">
+            <label>Od krawędzi GÓRNEJ do GÓRY 1. frezu (mm)</label>
+            <input type="number" id="top_offset" value="80" oninput="draw()">
+        </div>
+        <div class="form-group">
+            <label>Odstęp między frezami (od dołu do góry, mm)</label>
+            <input type="number" id="gap" value="24" oninput="draw()">
+        </div>
+        <div class="form-group grid-2">
+            <div>
+                <label>Od krawędzi LEWEJ (mm)</label>
+                <input type="number" id="left_offset" value="60" oninput="draw()">
+            </div>
+            <div>
+                <label>Od krawędzi PRAWEJ (mm)</label>
+                <input type="number" id="right_offset" value="60" oninput="draw()">
+            </div>
+        </div>
+
+        <h2>Dane Elementu</h2>
+        <div class="form-group">
+            <label>Nazwa elementu</label>
+            <input type="text" id="title" value="Front Wentylacja #1" oninput="draw()">
+        </div>
+
+        <h2>Stopka Dokumentu</h2>
+        <div class="form-group">
+            <label>Nazwa firmy / Stolarz</label>
+            <input type="text" id="company" value="FOR.MAT Marek Świerczyna" oninput="draw()">
+        </div>
+        <div class="form-group">
+            <label>Numer / Nazwa zlecenia</label>
+            <input type="text" id="job" value="Zlecenie #2026/09" oninput="draw()">
+        </div>
+
+        <button onclick="printPDF()">🖨️ DRUKUJ / ZAPISZ PDF</button>
+    </div>
+
+    <!-- ARKUSZ PODGLĄDU A4 -->
+    <div class="preview-area">
+        <div class="page-a4" id="page-a4">
+            <div class="header-drawing">
+                <div class="header-title" id="out-title">FRONT WENTYLACJA #1</div>
+                <div class="header-meta" id="out-meta"></div>
+            </div>
+
+            <div class="svg-container" id="svg-box">
+                <svg id="svg" width="100%" height="100%"></svg>
+            </div>
+
+            <div class="footer-note">
+                <span class="footer-left" id="out-company">FOR.MAT Marek Świerczyna</span>
+                <span class="footer-center" id="out-footer-center">Frezy wentylacyjne | Frez: Ø16 mm</span>
+                <span class="footer-right" id="out-job">Zlecenie #2026/09</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function draw(forceW, forceH) {
+    const H = parseFloat(document.getElementById('h').value) || 0;
+    const W = parseFloat(document.getElementById('w').value) || 0;
+    const cutterDia = parseFloat(document.getElementById('cutter_dia').value) || 16;
+    const count = parseInt(document.getElementById('count').value) || 1;
+    const topEdgeOffset = parseFloat(document.getElementById('top_offset').value) || 0;
+    const gap = parseFloat(document.getElementById('gap').value) || 0;
+    const leftOffset = parseFloat(document.getElementById('left_offset').value) || 0;
+    const rightOffset = parseFloat(document.getElementById('right_offset').value) || 0;
+
+    const title = document.getElementById('title').value || "Brak nazwy";
+    const company = document.getElementById('company').value || "";
+    const job = document.getElementById('job').value || "";
+
+    const slotLength = W - leftOffset - rightOffset;
+
+    document.getElementById('out-title').innerText = `${title} (WENTYLACJA)`;
+    document.getElementById('out-meta').innerText = `Wymiary frontu: ${H} x ${W} mm | Frezy: ${count}x (Ø${cutterDia} mm) | Długość frezu: L=${slotLength} mm`;
+    document.getElementById('out-company').innerText = company;
+    document.getElementById('out-job').innerText = job;
+    document.getElementById('out-footer-center').innerText = `Frezy wentylacyjne: ${count} szt. | Szerokość wycięcia: ${cutterDia} mm (frez Ø${cutterDia})`;
+
+    const svg = document.getElementById('svg');
+    svg.innerHTML = '';
+
+    if (H <= 0 || W <= 0 || slotLength <= 0) return;
+
+    // Sztywne wymiary dla druku mobilnego lub dynamiczne dla podglądu ekranowego
+    const svgW = forceW || svg.clientWidth || 800;
+    const svgH = forceH || svg.clientHeight || 1000;
+    
+    const paddingX = 90;
+    const paddingY = 90;
+
+    const scale = Math.min((svgW - paddingX * 2) / W, (svgH - paddingY * 2) / H);
+    
+    const boxW = W * scale;
+    const boxH = H * scale;
+    const startX = (svgW - boxW) / 2;
+    const startY = (svgH - boxH) / 2;
+
+    let html = `
+    <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#000"/>
+        </marker>
+    </defs>`;
+
+    // Obrys zewnętrzny frontu
+    html += `<rect x="${startX}" y="${startY}" width="${boxW}" height="${boxH}" fill="none" stroke="#000" stroke-width="2"/>`;
+
+    // Wyznaczenie krawędzi frezów
+    const rPx = (cutterDia / 2) * scale;
+    const slotLeftX = startX + (leftOffset * scale);
+    const slotRightX = startX + boxW - (rightOffset * scale);
+    const slotW = slotRightX - slotLeftX;
+
+    const slots = [];
+    for (let i = 0; i < count; i++) {
+        const topEdgeMm = topEdgeOffset + (i * (cutterDia + gap));
+        const botEdgeMm = topEdgeMm + cutterDia;
+        const centerMm = topEdgeMm + (cutterDia / 2);
+
+        slots.push({
+            index: i,
+            topMm: topEdgeMm,
+            botMm: botEdgeMm,
+            centerMm: centerMm,
+            topPx: startY + (topEdgeMm * scale),
+            botPx: startY + (botEdgeMm * scale),
+            centerPx: startY + (centerMm * scale)
+        });
+    }
+
+    // Rysowanie frezów podłużnych
+    slots.forEach(s => {
+        html += `<rect x="${slotLeftX}" y="${s.topPx}" width="${slotW}" height="${rPx * 2}" rx="${rPx}" ry="${rPx}" fill="#f1f5f9" stroke="#000" stroke-width="1.2"/>`;
+        html += `<line x1="${slotLeftX - 10}" y1="${s.centerPx}" x2="${slotRightX + 10}" y2="${s.centerPx}" stroke="#94a3b8" stroke-dasharray="3,3" stroke-width="0.8"/>`;
+    });
+
+    // -------------------------------------------------------------
+    // WYMIAROWANIE PIONOWE (OD KRAWĘDZI DO KRAWĘDZI)
+    // -------------------------------------------------------------
+    const vDimX = startX - 45;
+
+    // Linia pomocnicza górnej krawędzi frontu
+    html += `<line x1="${startX}" y1="${startY}" x2="${vDimX - 10}" y2="${startY}" stroke="#64748b" stroke-width="0.8"/>`;
+
+    // 1. Wymiar od GÓRNEJ krawędzi frontu do GÓRNEJ krawędzi 1. frezu
+    if (slots.length > 0) {
+        const firstTopY = slots[0].topPx;
+        html += `<line x1="${slotLeftX}" y1="${firstTopY}" x2="${vDimX - 10}" y2="${firstTopY}" stroke="#64748b" stroke-width="0.8"/>`;
+        html += `<line x1="${vDimX}" y1="${startY}" x2="${vDimX}" y2="${firstTopY}" stroke="#000" stroke-width="1" marker-start="url(#arrow)" marker-end="url(#arrow)"/>`;
+        html += `<text x="${vDimX - 6}" y="${(startY + firstTopY) / 2 + 4}" font-size="11" font-weight="bold" text-anchor="end">${topEdgeOffset}</text>`;
+    }
+
+    // 2. Wymiary odstępów (od DOLNEJ krawędzi górnego frezu do GÓRNEJ krawędzi dolnego frezu)
+    for (let i = 1; i < slots.length; i++) {
+        const prevBotY = slots[i - 1].botPx;
+        const currTopY = slots[i].topPx;
+        
+        html += `<line x1="${slotLeftX}" y1="${prevBotY}" x2="${vDimX - 10}" y2="${prevBotY}" stroke="#64748b" stroke-width="0.8"/>`;
+        html += `<line x1="${slotLeftX}" y1="${currTopY}" x2="${vDimX - 10}" y2="${currTopY}" stroke="#64748b" stroke-width="0.8"/>`;
+
+        html += `<line x1="${vDimX}" y1="${prevBotY}" x2="${vDimX}" y2="${currTopY}" stroke="#000" stroke-width="1" marker-start="url(#arrow)" marker-end="url(#arrow)"/>`;
+        html += `<text x="${vDimX - 6}" y="${(prevBotY + currTopY) / 2 + 4}" font-size="10" font-weight="bold" text-anchor="end">${gap}</text>`;
+    }
+
+    // -------------------------------------------------------------
+    // WYMIAROWANIE POZIOME (TYLKO LEWA I PRAWA KRAWĘDŹ)
+    // -------------------------------------------------------------
+    const hDimY = startY - 40;
+
+    const refY = slots[0] ? slots[0].topPx : startY;
+    html += `<line x1="${startX}" y1="${startY}" x2="${startX}" y2="${hDimY - 10}" stroke="#64748b" stroke-width="0.8"/>`;
+    html += `<line x1="${slotLeftX}" y1="${refY}" x2="${slotLeftX}" y2="${hDimY - 10}" stroke="#64748b" stroke-width="0.8"/>`;
+    html += `<line x1="${slotRightX}" y1="${refY}" x2="${slotRightX}" y2="${hDimY - 10}" stroke="#64748b" stroke-width="0.8"/>`;
+    html += `<line x1="${startX + boxW}" y1="${startY}" x2="${startX + boxW}" y2="${hDimY - 10}" stroke="#64748b" stroke-width="0.8"/>`;
+
+    // Wymiar lewego marginesu
+    html += `<line x1="${startX}" y1="${hDimY}" x2="${slotLeftX}" y2="${hDimY}" stroke="#000" stroke-width="1" marker-start="url(#arrow)" marker-end="url(#arrow)"/>`;
+    html += `<text x="${(startX + slotLeftX) / 2}" y="${hDimY - 5}" font-size="10" font-weight="bold" text-anchor="middle">${leftOffset}</text>`;
+
+    // Wymiar prawego marginesu
+    html += `<line x1="${slotRightX}" y1="${hDimY}" x2="${startX + boxW}" y2="${hDimY}" stroke="#000" stroke-width="1" marker-start="url(#arrow)" marker-end="url(#arrow)"/>`;
+    html += `<text x="${(slotRightX + startX + boxW) / 2}" y="${hDimY - 5}" font-size="10" font-weight="bold" text-anchor="middle">${rightOffset}</text>`;
+
+    // Oznaczenie średnicy frezu na rysunku (prawa strona przy pierwszym frezie)
+    if (slots.length > 0) {
+        const fY = slots[0].centerPx;
+        html += `<line x1="${slotRightX}" y1="${fY}" x2="${slotRightX + 25}" y2="${fY}" stroke="#64748b" stroke-width="0.8"/>`;
+        html += `<text x="${slotRightX + 30}" y="${fY + 4}" font-size="10" font-weight="bold" fill="#2563eb">Ø${cutterDia}</text>`;
+    }
+
+    // -------------------------------------------------------------
+    // WYMIARY GABARYTOWE (WYSOKOŚĆ I SZEROKOŚĆ)
+    // -------------------------------------------------------------
+    const hDimX = startX + boxW + 45;
+    html += `<line x1="${startX + boxW}" y1="${startY}" x2="${hDimX + 8}" y2="${startY}" stroke="#64748b" stroke-width="0.8"/>`;
+    html += `<line x1="${startX + boxW}" y1="${startY + boxH}" x2="${hDimX + 8}" y2="${startY + boxH}" stroke="#64748b" stroke-width="0.8"/>`;
+    html += `<line x1="${hDimX}" y1="${startY}" x2="${hDimX}" y2="${startY + boxH}" stroke="#000" stroke-width="1" marker-start="url(#arrow)" marker-end="url(#arrow)"/>`;
+    html += `<text x="${hDimX + 15}" y="${startY + boxH / 2}" font-size="12" font-weight="bold" transform="rotate(90, ${hDimX + 15}, ${startY + boxH / 2})" text-anchor="middle">${H}</text>`;
+
+    const wDimY = startY + boxH + 35;
+    html += `<line x1="${startX}" y1="${startY + boxH}" x2="${startX}" y2="${wDimY + 8}" stroke="#64748b" stroke-width="0.8"/>`;
+    html += `<line x1="${startX + boxW}" y1="${startY + boxH}" x2="${startX + boxW}" y2="${wDimY + 8}" stroke="#64748b" stroke-width="0.8"/>`;
+    html += `<line x1="${startX}" y1="${wDimY}" x2="${startX + boxW}" y2="${wDimY}" stroke="#000" stroke-width="1" marker-start="url(#arrow)" marker-end="url(#arrow)"/>`;
+    html += `<text x="${startX + boxW / 2}" y="${wDimY + 18}" font-size="12" font-weight="bold" text-anchor="middle">${W}</text>`;
+
+    svg.innerHTML = html;
+}
+
+// PRZELICZENIE DANYCH W WYMIARACH PROPORCJONALNYCH DLA A4 I WYWOŁANIE DRUKU
+function printPDF() {
+    // Wymuszamy wygenerowanie rysunku SVG dla stałej rozdzielczości A4 (1800x2400 px)
+    draw(1800, 2400);
+
+    setTimeout(() => {
+        window.print();
+        // Po wywołaniu okna druku przywracamy rysunek dopasowany do ekranu urządzenia
+        setTimeout(() => {
+            draw();
+        }, 500);
+    }, 100);
+}
+
+window.onload = function() {
+    draw();
+};
+
+window.onresize = function() {
+    draw();
+};
+</script>
+
+</body>
+</html>
