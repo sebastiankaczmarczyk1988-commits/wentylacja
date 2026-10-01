@@ -316,9 +316,12 @@ function draw(forceW, forceH) {
 
     if (H <= 0 || W <= 0 || slotLength <= 0) return;
 
-    // Sztywne wymiary dla druku mobilnego lub dynamiczne dla podglądu ekranowego
     const svgW = forceW || svg.clientWidth || 800;
     const svgH = forceH || svg.clientHeight || 1000;
+
+    // Kluczowa poprawka: Ustawiamy viewBox, dzięki czemu SVG zachowuje elastyczność w PDF
+    svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     
     const paddingX = 90;
     const paddingY = 90;
@@ -416,7 +419,7 @@ function draw(forceW, forceH) {
     html += `<line x1="${slotRightX}" y1="${hDimY}" x2="${startX + boxW}" y2="${hDimY}" stroke="#000" stroke-width="1" marker-start="url(#arrow)" marker-end="url(#arrow)"/>`;
     html += `<text x="${(slotRightX + startX + boxW) / 2}" y="${hDimY - 5}" font-size="10" font-weight="bold" text-anchor="middle">${rightOffset}</text>`;
 
-    // Oznaczenie średnicy frezu na rysunku (prawa strona przy pierwszym frezie)
+    // Oznaczenie średnicy frezu na rysunku
     if (slots.length > 0) {
         const fY = slots[0].centerPx;
         html += `<line x1="${slotRightX}" y1="${fY}" x2="${slotRightX + 25}" y2="${fY}" stroke="#64748b" stroke-width="0.8"/>`;
@@ -441,14 +444,11 @@ function draw(forceW, forceH) {
     svg.innerHTML = html;
 }
 
-// PRZELICZENIE DANYCH W WYMIARACH PROPORCJONALNYCH DLA A4 I WYWOŁANIE DRUKU
 function printPDF() {
-    // Wymuszamy wygenerowanie rysunku SVG dla stałej rozdzielczości A4 (1800x2400 px)
     draw(1800, 2400);
 
     setTimeout(() => {
         window.print();
-        // Po wywołaniu okna druku przywracamy rysunek dopasowany do ekranu urządzenia
         setTimeout(() => {
             draw();
         }, 500);
